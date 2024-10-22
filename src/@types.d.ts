@@ -71,6 +71,7 @@ export type Song = {
   duration: number;
   beatmapSetID?: number;
 
+  hash?: string;
   mode?: number;
   titleUnicode?: string;
   artistUnicode?: string;

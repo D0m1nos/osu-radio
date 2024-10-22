@@ -1,25 +1,14 @@
 import { cn } from "../../lib/css.utils";
-import Button from "../button/Button";
 import Dropdown from "../dropdown/Dropdown";
 import { changeAudioDevice } from "@renderer/components/song/song.utils";
-import { GlobeIcon, LucideIcon, RefreshCwIcon, Volume2Icon } from "lucide-solid";
+import { GlobeIcon, LucideIcon, Volume2Icon } from "lucide-solid";
 import { Component, createEffect, createSignal, For, JSX, onMount } from "solid-js";
 
 const Settings: Component = () => {
   return (
     <div class="flex flex-col gap-10 p-8">
       <SettingsSection title="General" Icon={GlobeIcon}>
-        <Button
-          variant={"primary"}
-          onClick={async () => {
-            const collections = await window.api.request("collections::getCollections");
-            if (!collections.isError) {
-              console.log(collections.value);
-            }
-          }}
-        >
-          <RefreshCwIcon />
-        </Button>
+        Empty
       </SettingsSection>
       <SettingsSection title="Audio" Icon={Volume2Icon}>
         <AudioDeviceSetting />

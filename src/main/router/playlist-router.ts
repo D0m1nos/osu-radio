@@ -23,6 +23,41 @@ Router.respond("playlist::add", async (_evt, playlistName, song) => {
   await Router.dispatch(mainWindow, "playlist::resetSongList").catch(errorIgnored);
 });
 
+Router.respond("playlist::create::fromCollection", async (_evt, collectionFile) => {
+  const playlists = Storage.getTable("playlists");
+  const songTable = Storage.getTable("songs");
+  const songs = Object.keys(songTable.getStruct());
+
+  collectionFile.collections.forEach(async (collection) => {
+    let newPlaylist: Playlist = {
+      count: 0,
+      length: 0,
+      name: collection.name,
+      songs: [],
+    };
+    collection.beatmapHashes.forEach((hash) => {
+      const matchedSongName = songs.find((song) => {
+        const s = songTable.get(song);
+        if (!s.isNone) {
+          return s.value.hash === hash;
+        }
+        return false;
+      });
+
+      if (matchedSongName !== undefined) {
+        const matchedSong = songTable.get(matchedSongName);
+        if (!matchedSong.isNone) {
+          newPlaylist.songs.push(matchedSong.value);
+          newPlaylist.count = newPlaylist.count + 1;
+        }
+      }
+    });
+    // console.log("writing", collection.name, newPlaylist);
+    playlists.write(collection.name, newPlaylist);
+  });
+  await Router.dispatch(mainWindow, "playlist::resetList").catch(errorIgnored);
+});
+
 Router.respond("playlist::create", (_evt, name) => {
   console.log("create playlist " + name);
   //todo: check if playlist already exists

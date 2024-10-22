@@ -3,6 +3,7 @@ import SongImage from "@renderer/components/song/SongImage";
 import Impulse from "@renderer/lib/Impulse";
 import { XIcon } from "lucide-solid";
 import { Component, createSignal, Setter } from "solid-js";
+import { Collection, CollectionFile } from "src/@types";
 
 export type PlaylistCreateBoxProps = {
   group: string;
@@ -21,6 +22,16 @@ const PlaylistCreateBox: Component<PlaylistCreateBoxProps> = (props) => {
     setPlaylistName("");
     props.reset.pulse();
     props.isOpen(false);
+  };
+
+  const syncCollections = async () => {
+    const collectionFile = await window.api.request("collections::getCollections");
+    if (collectionFile.isError) {
+      return;
+    }
+
+    const collections: CollectionFile = collectionFile.value;
+    await window.api.request("playlist::create::fromCollection", collections);
   };
 
   return (
@@ -49,12 +60,20 @@ const PlaylistCreateBox: Component<PlaylistCreateBoxProps> = (props) => {
               setPlaylistName(e.target.value);
             }}
           />
-          <button
-            class="mb-6 flex h-9 w-full flex-row items-center justify-center rounded-lg bg-accent font-semibold text-black"
-            onClick={() => createPlaylist()}
-          >
-            Create
-          </button>
+          <div class="flex flex-row gap-2">
+            <button
+              class="mb-6 flex h-9 w-full flex-row items-center justify-center rounded-lg bg-accent font-semibold text-black"
+              onClick={() => createPlaylist()}
+            >
+              Create
+            </button>
+            <button
+              class="mb-6 flex h-9 w-full flex-row items-center justify-center rounded-lg bg-accent font-semibold text-black"
+              onClick={() => syncCollections()}
+            >
+              Sync
+            </button>
+          </div>
         </div>
       </div>
     </div>

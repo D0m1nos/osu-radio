@@ -1,5 +1,6 @@
 import type {
   AudioSource,
+  CollectionFile,
   ImageSource,
   InfiniteScrollerInitResponse,
   InfiniteScrollerRequest,
@@ -45,6 +46,7 @@ export type RequestAPI = {
   "playlist::add": (playlistName: string, song: Song) => void;
   "playlist::remove": (playlistName: string, song: Song) => void;
   "playlist::create": (name: string) => void;
+  "playlist::create::fromCollection": (collectionFile: CollectionFile) => void;
   "playlist::delete": (name: string) => void;
   "playlist::rename": (oldName: string, newName: string) => void;
 

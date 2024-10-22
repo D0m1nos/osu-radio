@@ -216,6 +216,7 @@ export class OsuParser {
           bpm: [],
           duration: 0,
           diffs: [],
+          hash: "",
         };
 
         song.artist = db.readString().trim();
@@ -229,7 +230,7 @@ export class OsuParser {
 
         const audio_filename = db.readString();
 
-        db.readHash(); // .osu file md5
+        song.hash = db.readHash();
         const osu_filename = db.readString().trim();
         db.readByte(); // ranking status
         db.readShort(); // nb circles

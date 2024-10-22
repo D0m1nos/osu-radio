@@ -1,6 +1,15 @@
-import { AudioSource, ImageSource, ResourceID, Result, Song } from "../../../@types";
+import {
+  AudioSource,
+  Collection,
+  CollectionFile,
+  ImageSource,
+  ResourceID,
+  Result,
+  Song,
+} from "../../../@types";
 import { access } from "../fs-promises";
 import { fail, ok } from "../rust-like-utils-backend/Result";
+import { Storage } from "../storage/Storage";
 import { assertNever } from "../tungsten/assertNever";
 import { OsuFile } from "./OsuFile";
 import fs from "graceful-fs";
@@ -342,6 +351,63 @@ export class OsuParser {
     }
 
     return ok([songTable, audioTable, imageTable]);
+  }
+
+  static async parseCollection(): Promise<Result<CollectionFile, string>> {
+    const settings = Storage.getTable("settings");
+    const osuDir = settings.get("osuSongsDir");
+
+    if (osuDir.isNone) {
+      console.error("osuSongsDir doesn't exist");
+      return fail("Failed to find osu! folder.");
+    }
+
+    let databasePath = osuDir.value;
+    let dbBuffer;
+
+    let currentDir = databasePath;
+    // Solution to the issue mentioned in the note above
+    currentDir = databasePath.replaceAll("\\", "/");
+
+    while (currentDir !== path.dirname(currentDir)) {
+      if (fs.existsSync(path.join(currentDir, "collection.db"))) {
+        databasePath = currentDir;
+        break;
+      }
+      currentDir = path.dirname(currentDir);
+    }
+
+    try {
+      // NOTE: This isn't readFile from fs-promises.ts.
+      //       We want to read binary data here, not utf-8 encoded data!
+      dbBuffer = await fs.promises.readFile(databasePath + "/collection.db");
+    } catch (err) {
+      console.error(err);
+      return fail("Failed to read collection.db.");
+    }
+
+    const db = new BufferReader(dbBuffer); // Use BufferReader here
+
+    const dbVersion = db.readInt();
+    const colCount = db.readInt();
+
+    console.log("Collection.db version:", dbVersion, "number of collections:", colCount);
+
+    let collections: Collection[] = [];
+
+    for (let i = 0; i < colCount; ++i) {
+      const collectionName = db.readString();
+      const numMaps = db.readInt();
+      let mapHashes: string[] = [];
+      for (let j = 0; j < numMaps; ++j) {
+        const mapHash = db.readString();
+        mapHashes.push(mapHash);
+      }
+
+      collections.push({ beatmapHashes: mapHashes, mapCount: numMaps, name: collectionName });
+    }
+
+    return ok({ collectionCount: colCount, collections: collections });
   }
 
   static async parseFile(file: string): Promise<Result<OsuFile, string>> {

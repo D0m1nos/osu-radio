@@ -98,6 +98,17 @@ export type SongIndex = {
   bpm: number;
 };
 
+type Collection = {
+  name: string;
+  mapCount: number;
+  beatmapHashes: string[];
+};
+
+type CollectionFile = {
+  collectionCount: number;
+  collections: Collection[];
+};
+
 // System table definition
 export type System = {
   "songDir.mtime": string;

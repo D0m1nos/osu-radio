@@ -40,6 +40,8 @@ export type RequestAPI = {
   "queue::create": (payload: QueueCreatePayload) => void;
   "queue::shuffle": () => void;
 
+  "collections::getCollections": () => Result<CollectionFile, string>;
+
   "playlist::add": (playlistName: string, song: Song) => void;
   "playlist::remove": (playlistName: string, song: Song) => void;
   "playlist::create": (name: string) => void;

@@ -3,7 +3,7 @@ import SongImage from "@renderer/components/song/SongImage";
 import Impulse from "@renderer/lib/Impulse";
 import { XIcon } from "lucide-solid";
 import { Component, createSignal, Setter } from "solid-js";
-import { Collection, CollectionFile } from "src/@types";
+import { CollectionFile } from "src/@types";
 
 export type PlaylistCreateBoxProps = {
   group: string;

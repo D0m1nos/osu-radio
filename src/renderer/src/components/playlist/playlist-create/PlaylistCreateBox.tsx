@@ -24,7 +24,7 @@ const PlaylistCreateBox: Component<PlaylistCreateBoxProps> = (props) => {
   };
 
   return (
-    <div class="mb-6 rounded-xl bg-thick-material">
+    <div class="animate-playlist-show-createBox mb-6 rounded-xl bg-thick-material">
       <div class="flex flex-row items-center justify-between p-4">
         <h3 class="text-xl">Create a new playlist</h3>
         <Button variant={"ghost"} size={"icon"} onClick={() => props.isOpen(false)}>

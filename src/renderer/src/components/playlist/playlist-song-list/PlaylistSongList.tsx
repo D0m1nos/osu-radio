@@ -60,7 +60,7 @@ const PlaylistSongList: Component<PlaylistSongListProps> = (props) => {
   // };
 
   return (
-    <div class="mx-5 my-6">
+    <div class="mx-5 my-6 animate-playlist-enter-playlist">
       <div class="mb-6 flex w-full flex-row items-center justify-between">
         <div class="flex flex-row items-center gap-5 text-xl font-medium">
           <Button

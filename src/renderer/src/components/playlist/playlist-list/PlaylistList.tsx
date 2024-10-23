@@ -22,7 +22,7 @@ const PlaylistList: Component = () => {
   );
 
   return (
-    <div class="flex h-full flex-col">
+    <div class="flex h-full flex-col animate-playlist-exit-playlist">
       {/* <Search
         query={querySignal}
         tags={tagsSignal}

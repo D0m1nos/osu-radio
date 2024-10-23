@@ -1,9 +1,17 @@
 /** @type {import('tailwindcss').Config} */
 
+import { PlaylistAnimations } from "./src/renderer/src/components/playlist/animations";
+
 export default {
   content: ["./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      keyframes: {
+        ...PlaylistAnimations.keyframes,
+      },
+      animation: {
+        ...PlaylistAnimations.animation,
+      },
       colors: {
         transparent: "transparent",
         "thick-material": "rgba(var(--color-thick-material), 0.9)",

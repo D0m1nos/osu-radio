@@ -6,7 +6,7 @@ import { ignoreClickInContextMenu } from "../context-menu/SongContextMenu";
 import { song as selectedSong } from "../song.utils";
 import Popover from "@renderer/components/popover/Popover";
 import { EllipsisVerticalIcon } from "lucide-solid";
-import { Component, createSignal, JSXElement, onMount, createMemo } from "solid-js";
+import { Component, createSignal, JSXElement, onMount, createMemo, Signal } from "solid-js";
 import { Portal } from "solid-js/web";
 import { twMerge } from "tailwind-merge";
 
@@ -18,12 +18,14 @@ type SongItemProps = {
   draggable?: true;
   onDrop?: (before: Element | null) => any;
   contextMenu: JSXElement;
+  currentlyOpenMenu: Signal<Signal<boolean>>;
 };
 
 const SongItem: Component<SongItemProps> = (props) => {
   let item: HTMLDivElement | undefined;
   const [localShow, setLocalShow] = createSignal(false);
   const [mousePos, setMousePos] = createSignal<[number, number]>([0, 0]);
+  const [currentlyOpenMenu, setCurrentlyOpenMenu] = props.currentlyOpenMenu;
 
   onMount(() => {
     if (!item) {
@@ -49,7 +51,14 @@ const SongItem: Component<SongItemProps> = (props) => {
   return (
     <Popover
       isOpen={localShow}
-      onValueChange={setLocalShow}
+      onValueChange={(v) => {
+        setLocalShow(v);
+        currentlyOpenMenu()[1](false);
+        setCurrentlyOpenMenu([localShow, setLocalShow]);
+        if (!v) {
+          // setCurrentlyOpenMenu(createSignal(false));
+        }
+      }}
       placement="right"
       offset={{ crossAxis: 5, mainAxis: 5 }}
       shift={{}}
@@ -57,11 +66,11 @@ const SongItem: Component<SongItemProps> = (props) => {
       mousePos={mousePos}
     >
       <Portal>
-        <Popover.Overlay />
         <Popover.Content
           onClick={(e) => {
             e.stopImmediatePropagation();
             setLocalShow(false);
+            // setCurrentlyOpenMenu(createSignal(false));
           }}
         >
           {props.contextMenu}
@@ -76,6 +85,11 @@ const SongItem: Component<SongItemProps> = (props) => {
         ref={item}
         data-url={props.song.bg}
         onContextMenu={(e) => {
+          console.log(currentlyOpenMenu(), currentlyOpenMenu()[0]());
+          if (currentlyOpenMenu()[0]()) {
+            currentlyOpenMenu()[1](false);
+          }
+          setCurrentlyOpenMenu([localShow, setLocalShow]);
           setMousePos([e.clientX, e.clientY]);
           setLocalShow(true);
         }}

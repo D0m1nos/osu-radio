@@ -26,6 +26,7 @@ const SongList: Component<SongViewProps> = (props) => {
   const [order, setOrder] = createSignal(DEFAULT_ORDER_VALUE);
   const [count, setCount] = createSignal(0);
   const [isQueueExist, setIsQueueExist] = createSignal(false);
+  const currentlyOpenMenu = createSignal(createSignal(false));
 
   const [payload, setPayload] = createSignal<SongsQueryPayload>({
     view: props,
@@ -103,6 +104,7 @@ const SongList: Component<SongViewProps> = (props) => {
                 song={s}
                 group={group}
                 onSelect={createQueue}
+                currentlyOpenMenu={currentlyOpenMenu}
                 contextMenu={
                   <SongContextMenu>
                     <PlayNext path={s.path} disabled={!isQueueExist()} />

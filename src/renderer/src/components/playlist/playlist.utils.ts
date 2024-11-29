@@ -1,6 +1,6 @@
 import { addNotice } from "../notice/NoticeContainer";
 import Impulse from "@renderer/lib/Impulse";
-import { BadgeCheckIcon, CircleXIcon } from "lucide-solid";
+import { CircleCheckIcon, CircleXIcon } from "lucide-solid";
 import { createSignal } from "solid-js";
 import { Playlist, Song } from "src/@types";
 
@@ -48,7 +48,7 @@ export async function deletePlaylist(name: string, reset: Impulse) {
       variant: "success",
       title: "Playlist deleted",
       description: "Playlist " + name + " successfully deleted!",
-      icon: BadgeCheckIcon({ size: 20 }),
+      icon: CircleCheckIcon({ size: 20 }),
     });
   }
 }

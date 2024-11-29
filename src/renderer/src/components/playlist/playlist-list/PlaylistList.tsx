@@ -13,10 +13,13 @@ const PlaylistList: Component = () => {
 
   const group = namespace.create(true);
 
-  onMount(() => window.api.listen("playlist::resetList", resetListing.pulse.bind(resetListing)));
-  onCleanup(() =>
-    window.api.removeListener("playlist::resetList", resetListing.pulse.bind(resetListing)),
-  );
+  onMount(() => {
+    window.api.listen("playlist::resetList", resetListing.pulse.bind(resetListing));
+  });
+
+  onCleanup(() => {
+    window.api.removeListener("playlist::resetList", resetListing.pulse.bind(resetListing));
+  });
 
   return (
     <>

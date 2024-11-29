@@ -1,5 +1,6 @@
 import { RawList } from "../raw-list/RawList";
 import DropdownListItem from "./DropdownListItem";
+import { DropdownSub } from "./DropdownSub";
 import { useRovingFocusGroup } from "@renderer/lib/roving-focus-group/rovingFocusGroup";
 import { TokenNamespace } from "@renderer/lib/tungsten/token";
 import { createContext, createSignal, JSX, ParentComponent, useContext } from "solid-js";
@@ -18,6 +19,7 @@ function useProviderValue() {
     onKeyUp: () => {
       setIsHighlighted(true);
     },
+    direction: "vertical",
   });
 
   const handleItemPointerLeave = () => {
@@ -60,6 +62,7 @@ export function useDropdownList(): Context {
 
 const DropdownList = Object.assign(DropdownListRoot, {
   Item: DropdownListItem,
+  Sub: DropdownSub,
 });
 
 export default DropdownList;

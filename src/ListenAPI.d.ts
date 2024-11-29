@@ -16,6 +16,7 @@ export type ListenAPI = {
 
   "playlist::resetList": () => void;
   "playlist::resetSongList": () => void;
+  "playlist::resetDropdown": () => void;
 
   "window::maximizeChange": (maximized: boolean) => void;
 

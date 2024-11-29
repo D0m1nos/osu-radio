@@ -1,5 +1,5 @@
 import { isSongUndefined } from "../../../lib/song";
-import AddToPlaylist from "../context-menu/items/AddToPlaylist";
+import PlaylistChooser from "../context-menu/items/PlaylistChooser";
 import {
   isPlaying,
   next,
@@ -29,10 +29,20 @@ import {
   Volume2Icon,
   VolumeXIcon,
 } from "lucide-solid";
-import { Component, createMemo, createSignal, Match, Show, Switch, For } from "solid-js";
+import {
+  Component,
+  createMemo,
+  createSignal,
+  Match,
+  Show,
+  Switch,
+  For,
+  onMount,
+  onCleanup,
+  createComputed,
+} from "solid-js";
 import { ParentComponent } from "solid-js";
-import { Portal } from "solid-js/web";
-import { Song } from "src/@types";
+import { PlaylistDropdown, Song } from "src/@types";
 
 // Add a prop to accept the averageColor
 type SongControlsProps = {
@@ -193,6 +203,28 @@ const MIN_SPEED_AMOUNT = PREDEFINED_SPEEDS[0];
 const MAX_SPEED_AMOUNT = PREDEFINED_SPEEDS.at(-1);
 const RightPart = () => {
   const [isPopoverOpen, setisPopoverOpen] = createSignal(false);
+  const [isPlaylistPopoverOpen, setIsPlaylistPopoverOpen] = createSignal(false);
+  const [playlists, setPlaylists] = createSignal<PlaylistDropdown[]>([]);
+
+  async function fetchPlaylistDropdown() {
+    const result = await window.api.request("query::playlistDropdown", song());
+
+    if (result.isNone) {
+      setPlaylists([]);
+      return;
+    }
+
+    setPlaylists(result.value.playlists);
+  }
+
+  onMount(() => {
+    createComputed(fetchPlaylistDropdown);
+    window.api.listen("playlist::resetDropdown", fetchPlaylistDropdown);
+
+    onCleanup(() => {
+      window.api.removeListener("playlist::resetDropdown", fetchPlaylistDropdown);
+    });
+  });
 
   return (
     <div class="flex flex-1 justify-end gap-4">
@@ -215,9 +247,9 @@ const RightPart = () => {
           </Button>
         </Popover.Anchor>
 
-        <Portal>
+        <Popover.Portal>
           <Popover.Overlay />
-          <Popover.Content class="flex w-fit min-w-48 flex-col rounded-xl bg-thick-material px-1.5 py-3 shadow-xl ring-1 ring-inset ring-stroke backdrop-blur-md">
+          <Popover.Content class="flex w-fit min-w-48 flex-col pt-3">
             <p class="gap-1 px-2 text-sm font-medium text-subtext">Custom Speed</p>
             <div class="flex flex-col px-2">
               <Slider
@@ -241,18 +273,37 @@ const RightPart = () => {
               {(amount) => <SpeedOption amount={amount}>{amount}</SpeedOption>}
             </For>
           </Popover.Content>
-        </Portal>
+        </Popover.Portal>
       </Popover>
-      <Popover flip={{}} shift={{}} placement="top-start">
-        <Popover.Overlay />
-        <Popover.Content>
-          <AddButtonContextMenuContent song={song()} />
-        </Popover.Content>
-        <Popover.Trigger>
-          <Button size="icon" variant="ghost">
+      <Popover
+        isOpen={isPlaylistPopoverOpen}
+        onValueChange={setIsPlaylistPopoverOpen}
+        placement="top-end"
+        offset={{
+          mainAxis: 10,
+        }}
+      >
+        <Popover.Anchor>
+          <Button
+            onClick={() => setIsPlaylistPopoverOpen(true)}
+            size="icon"
+            variant="ghost"
+            title="Add to playlist"
+          >
             <CirclePlusIcon size={20} />
           </Button>
-        </Popover.Trigger>
+        </Popover.Anchor>
+
+        <Popover.Portal>
+          <Popover.Overlay />
+          <Popover.Content class="flex w-fit min-w-48 max-w-52 flex-col">
+            <PlaylistChoosePopoverContent
+              onCreatePlaylistClick={() => setIsPlaylistPopoverOpen(false)}
+              playlists={playlists()}
+              song={song()}
+            />
+          </Popover.Content>
+        </Popover.Portal>
       </Popover>
     </div>
   );
@@ -272,11 +323,20 @@ const SpeedOption: ParentComponent<SpeedOptionProps> = (props) => {
   );
 };
 
-type AddButtonContextMenuContentProps = { song: Song };
-const AddButtonContextMenuContent: Component<AddButtonContextMenuContentProps> = (props) => {
+type PlaylistChoosePopoverContentProps = {
+  song: Song;
+  playlists: PlaylistDropdown[];
+  onCreatePlaylistClick?: () => void;
+};
+
+const PlaylistChoosePopoverContent: Component<PlaylistChoosePopoverContentProps> = (props) => {
   return (
-    <DropdownList class="w-40">
-      <AddToPlaylist song={props.song} />
+    <DropdownList>
+      <PlaylistChooser
+        onCreatePlaylistClick={props.onCreatePlaylistClick}
+        playlists={props.playlists}
+        song={props.song}
+      />
     </DropdownList>
   );
 };

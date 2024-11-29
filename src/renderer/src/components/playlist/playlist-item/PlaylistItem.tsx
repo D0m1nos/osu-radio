@@ -1,22 +1,14 @@
 import SongImage from "../../song/SongImage";
-import {
-  deletePlaylist,
-  PLAYLIST_SCENE_SONGS,
-  setActivePlaylistName,
-  setPlaylistActiveScene,
-} from "../playlist.utils";
-import { renamePlaylist } from "../playlist.utils";
-import { getSongImage, ignoreClickInContextMenu } from "./playlist-item.utils";
+import { deletePlaylist, setPlaylistActivePage } from "../playlist.utils";
+import { getPlaylistImage } from "./playlist-item.utils";
+import Button from "@renderer/components/button/Button";
 import DropdownList from "@renderer/components/dropdown-list/DropdownList";
-import { Input } from "@renderer/components/input/Input";
 import Popover from "@renderer/components/popover/Popover";
 import Impulse from "@renderer/lib/Impulse";
-import draggable from "@renderer/lib/draggable/draggable";
 import { EllipsisVerticalIcon, ListXIcon, PencilLineIcon } from "lucide-solid";
-import { Component, createSignal, Match, onMount, Setter, Switch } from "solid-js";
+import { Component, createSignal } from "solid-js";
 import { Portal } from "solid-js/web";
 import { Playlist } from "src/@types";
-import { twMerge } from "tailwind-merge";
 
 export type PlaylistItemProps = {
   playlist: Playlist;
@@ -27,25 +19,8 @@ export type PlaylistItemProps = {
 const PlaylistItem: Component<PlaylistItemProps> = (props) => {
   let item: HTMLDivElement | undefined;
 
-  const [playlistName, setPlaylistName] = createSignal("");
-  const [editMode, setEditMode] = createSignal(false);
   const [localShow, setLocalShow] = createSignal(false);
-  const [mousePos, setMousePos] = createSignal<[number, number]>([0, 0]);
-
-  onMount(() => {
-    if (!item) return;
-
-    draggable(item, {
-      onClick: ignoreClickInContextMenu(() => {
-        if (!editMode()) {
-          setActivePlaylistName(props.playlist.name);
-          setPlaylistActiveScene(PLAYLIST_SCENE_SONGS);
-        }
-      }),
-      onDrop: () => {},
-      useOnlyAsOnClickBinder: true,
-    });
-  });
+  const [mousePos, setMousePos] = createSignal<[number, number] | undefined>(undefined);
 
   return (
     <Popover
@@ -53,8 +28,7 @@ const PlaylistItem: Component<PlaylistItemProps> = (props) => {
       onValueChange={setLocalShow}
       placement="right"
       offset={{ crossAxis: 5, mainAxis: 5 }}
-      shift={{}}
-      flip={{}}
+      shift
       position={mousePos}
     >
       <Portal>
@@ -66,75 +40,55 @@ const PlaylistItem: Component<PlaylistItemProps> = (props) => {
           }}
         >
           {/* can't pass this as a prop like in song-item because i need the editMode signal */}
-          <PlaylistItemContextMenuContent
-            editMode={setEditMode}
-            reset={props.reset}
-            playlist={props.playlist}
-          />
+          <PlaylistItemContextMenuContent reset={props.reset} playlist={props.playlist} />
         </Popover.Content>
       </Portal>
+
       <div
+        class="group -m-1.5 flex flex-row gap-4 rounded-lg border border-transparent p-1.5 py-1 hover:bg-surface"
+        classList={{
+          "bg-surface": localShow(),
+        }}
         onContextMenu={(e) => {
           e.preventDefault();
           setMousePos([e.clientX, e.clientY]);
           setLocalShow(true);
         }}
-        class="group"
+        onClick={() => {
+          setPlaylistActivePage({ name: "songs", playlist: props.playlist });
+        }}
         ref={item}
       >
-        <div class="flex flex-row gap-4">
-          <div class="flex items-center justify-center rounded-lg">
-            <SongImage
-              src={getSongImage(props.playlist)}
-              group={props.group}
-              class="h-[71px] w-[71px] rounded-lg bg-cover bg-center"
-            />
-          </div>
+        <div class="flex items-center justify-center rounded-lg">
+          <SongImage
+            src={getPlaylistImage(props.playlist)}
+            group={props.group}
+            class="h-16 w-16 rounded-lg bg-cover bg-center"
+          />
+        </div>
 
-          <div class="ml-[6px] flex w-full flex-row items-center justify-between">
-            <div class="flex flex-col justify-center text-base font-medium text-text">
-              <Switch fallback={""}>
-                <Match when={editMode() === true}>
-                  <Input
-                    variant={"outlined"}
-                    class="mb-1 max-w-48"
-                    type="text"
-                    value={props.playlist.name}
-                    onInput={(e) => {
-                      setPlaylistName(e.target.value);
-                    }}
-                    onKeyPress={async (e) => {
-                      if (e.key == "Enter") {
-                        await renamePlaylist(props.playlist.name, playlistName());
-                        setEditMode(false);
-                        props.reset.pulse();
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key == "Escape") {
-                        setEditMode(false);
-                      }
-                    }}
-                    onFocusOut={() => {
-                      setEditMode(false);
-                    }}
-                  />
-                </Match>
-                <Match when={editMode() === false}>
-                  <h3 class="text-3xl font-bold">{props.playlist.name}</h3>
-                </Match>
-              </Switch>
-              <p>{props.playlist.count} songs</p>
-            </div>
-            <Popover.Trigger
-              class={twMerge(
-                "inline-grid aspect-square size-9 place-items-center rounded opacity-0 transition-opacity hover:bg-surface group-hover:opacity-100",
-                localShow() && "opacity-100",
-              )}
+        <div class="flex w-full items-center justify-between">
+          <div class="flex flex-col justify-center text-base font-medium text-text">
+            <h3 class="text-xl font-bold">{props.playlist.name}</h3>
+            <p class="text-base text-subtext">{props.playlist.count} songs</p>
+          </div>
+          <Popover.Anchor>
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                setMousePos(undefined);
+                setLocalShow(true);
+              }}
+              class="opacity-0 group-hover:opacity-100"
+              classList={{
+                "opacity-100": localShow(),
+              }}
+              variant="ghost"
+              size="square"
             >
               <EllipsisVerticalIcon />
-            </Popover.Trigger>
-          </div>
+            </Button>
+          </Popover.Anchor>
         </div>
       </div>
     </Popover>
@@ -144,17 +98,20 @@ const PlaylistItem: Component<PlaylistItemProps> = (props) => {
 type PlaylistItemContextMenuContentProps = {
   playlist: Playlist;
   reset: Impulse;
-  editMode: Setter<boolean>;
 };
 const PlaylistItemContextMenuContent: Component<PlaylistItemContextMenuContentProps> = (props) => {
   return (
     <DropdownList class="w-40">
       <DropdownList.Item
         onClick={() => {
-          props.editMode(true);
+          setPlaylistActivePage({
+            name: "edit",
+            playlist: props.playlist,
+            from: { name: "list" },
+          });
         }}
       >
-        <span>Rename playlist</span>
+        <span>Edit playlist</span>
         <PencilLineIcon class="text-subtext" size={20} />
       </DropdownList.Item>
       <DropdownList.Item

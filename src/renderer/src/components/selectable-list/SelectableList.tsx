@@ -19,6 +19,7 @@ function useProviderValue(props: SelectableListOptions) {
   const rovingFocusGroup = useRovingFocusGroup({
     updateFocusOnHover: true,
     defaultProp: props.value?.() ?? props.defaultValue,
+    direction: "vertical",
   });
   const [selectedItem, setSelectedItem] = useControllableState({
     defaultProp: props.defaultValue || DEFAULT_SELECTED_VALUE,

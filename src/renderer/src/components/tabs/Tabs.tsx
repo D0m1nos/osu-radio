@@ -19,6 +19,7 @@ function useProviderValue(props: Props) {
     defaultProp: props.defaultValue || DEFAULT_SELECTED_VALUE,
     onChange: props.onValueChange,
     prop: props.value,
+    direction: "horizontal",
   });
 }
 

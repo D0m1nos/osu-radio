@@ -5,7 +5,7 @@ import { DOMElement } from "solid-js/jsx-runtime";
 const ITEM_DATA_ATTR = "data-item";
 const DEFAULT_SELECTED_VALUE = "";
 
-const canFocus = (
+export const canFocus = (
   element: Element | null | undefined,
 ): element is Element & {
   focus(): void;
@@ -23,6 +23,7 @@ type Params = {
   onChange?: (newValue: string) => void;
   updateFocusOnHover?: boolean;
   onKeyUp?: () => void;
+  direction?: "horizontal" | "vertical";
 };
 export function useRovingFocusGroup(props: Params = {}) {
   let container!: HTMLElement;
@@ -79,10 +80,13 @@ export function useRovingFocusGroup(props: Params = {}) {
       (node) => node.getAttribute(ITEM_DATA_ATTR) === currentStopId(),
     );
 
+    const direction = props.direction ?? "vertical";
+    const backwards = direction === "vertical" ? "ArrowUp" : "ArrowLeft";
+    const forwards = direction === "vertical" ? "ArrowDown" : "ArrowRight";
+
     let newIndex = -1;
     switch (event.key) {
-      case "ArrowUp":
-      case "ArrowLeft": {
+      case backwards: {
         if (currentlySelectedNodeIndex === 0) {
           newIndex = currentlySelectedNodeIndex;
           break;
@@ -91,8 +95,7 @@ export function useRovingFocusGroup(props: Params = {}) {
         newIndex = currentlySelectedNodeIndex - 1;
         break;
       }
-      case "ArrowDown":
-      case "ArrowRight": {
+      case forwards: {
         if (currentlySelectedNodeIndex === orderedNodes.length - 1) {
           newIndex = currentlySelectedNodeIndex;
           break;

@@ -17,6 +17,7 @@ import {
   ShiftOptions,
 } from "@floating-ui/dom";
 import useControllableState from "@renderer/lib/controllable-state";
+import { canFocus } from "@renderer/lib/roving-focus-group/rovingFocusGroup";
 import { Token, TokenNamespace } from "@renderer/lib/tungsten/token";
 import {
   createSignal,
@@ -30,6 +31,9 @@ import {
 } from "solid-js";
 
 export const DEFAULT_POPOVER_OPEN = false;
+
+const FOCUSABLE_ELEMENT_SELECTOR =
+  'a[href]:not([tabindex="-1"]), button:not([tabindex="-1"]), input:not([tabindex="-1"]), textarea:not([tabindex="-1"]), select:not([tabindex="-1"]), details:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
 
 export type Props = {
   offset?: OffsetOptions;
@@ -60,6 +64,23 @@ function useProviderValue(props: Props) {
   const [triggerRef, _setTriggerRef] = createSignal<HTMLElement | null>(null);
   const [contentRef, _setContentRef] = createSignal<HTMLDivElement | null>(null);
   const [id, setId] = createSignal<string>("");
+
+  const focusFirstItemOnContent = () => {
+    const content = contentRef();
+    if (!content) {
+      return;
+    }
+
+    const firstItem = content.querySelector(FOCUSABLE_ELEMENT_SELECTOR);
+    console.log(content.querySelectorAll(FOCUSABLE_ELEMENT_SELECTOR));
+    if (!firstItem) {
+      return;
+    }
+
+    if (canFocus(firstItem)) {
+      firstItem.focus();
+    }
+  };
 
   onMount(() => {
     window.addEventListener("resize", handleResize);
@@ -175,6 +196,7 @@ function useProviderValue(props: Props) {
     setTriggerRef,
     setContentRef,
     contentRef,
+    focusFirstItemOnContent,
   };
 }
 

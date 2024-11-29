@@ -2,21 +2,32 @@ import { addNotice } from "../notice/NoticeContainer";
 import Impulse from "@renderer/lib/Impulse";
 import { CircleCheckIcon, CircleXIcon } from "lucide-solid";
 import { createSignal } from "solid-js";
-import { Song } from "src/@types";
+import { Playlist, Song } from "src/@types";
 
-const PLAYLIST_SCENE_LIST = 0;
-const PLAYLIST_SCENE_SONGS = 1;
+export type PlaylistPageNew = {
+  name: "new";
+};
 
-const [playlistActiveScene, setPlaylistActiveScene] = createSignal(PLAYLIST_SCENE_LIST);
-const [activePlaylistName, setActivePlaylistName] = createSignal("");
-const [createPlaylistBoxSong, setCreatePlaylistBoxSong] = createSignal<Song | undefined>(undefined);
-const [showPlaylistCreateBox, setShowPlaylistCreateBox] = createSignal(false);
+export type PlaylistPageList = {
+  name: "list";
+};
 
-export { playlistActiveScene, setPlaylistActiveScene };
-export { activePlaylistName, setActivePlaylistName };
-export { createPlaylistBoxSong, setCreatePlaylistBoxSong };
-export { showPlaylistCreateBox, setShowPlaylistCreateBox };
-export { PLAYLIST_SCENE_SONGS, PLAYLIST_SCENE_LIST };
+export type PlaylistPageSong = {
+  name: "songs";
+  playlist: Playlist;
+};
+
+export type PlaylistPageEdit = {
+  name: "edit";
+  playlist: Playlist;
+  from: PlaylistPageList | PlaylistPageSong;
+};
+
+export type PlaylistPage = PlaylistPageNew | PlaylistPageList | PlaylistPageSong | PlaylistPageEdit;
+
+export const [playlistActivePage, setPlaylistActivePage] = createSignal<PlaylistPage>({
+  name: "list",
+});
 
 export function noticeError(error: string) {
   addNotice({
@@ -42,28 +53,16 @@ export async function deletePlaylist(name: string, reset: Impulse) {
   }
 }
 
-export async function renamePlaylist(oldName: string, newName: string) {
-  newName = newName.trim();
-  if (newName === undefined || newName === "" || newName === oldName) {
-    return;
-  }
-
-  const result = await window.api.request("playlist::rename", oldName, newName);
+export async function deleteSongFromPlaylist(playlistName: string, song: Song) {
+  const result = await window.api.request("playlist::remove", playlistName, song);
   if (result.isError) {
     noticeError(result.error);
     return;
   }
-
-  addNotice({
-    title: "Renamed playlist",
-    description: "Playlist renamed successfully!",
-    variant: "success",
-    icon: CircleCheckIcon({ size: 20 }),
-  });
 }
 
-export async function deleteSong(playlistName: string, song: Song) {
-  const result = await window.api.request("playlist::remove", playlistName, song);
+export async function addToPlaylist(name: string, song: Song) {
+  const result = await window.api.request("playlist::add", name, song);
   if (result.isError) {
     noticeError(result.error);
     return;

@@ -56,7 +56,7 @@ const PopoverContent: Component<Props> = (props) => {
       <div
         {...props}
         class={cn(
-          "popover-content rounded-lg border border-stroke bg-thick-material p-2 backdrop-blur-md",
+          "popover-content rounded-lg border border-stroke bg-thick-material p-2 shadow-xl backdrop-blur-md",
           props.class,
         )}
         ref={state.setContentRef}

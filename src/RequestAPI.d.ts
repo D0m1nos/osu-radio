@@ -6,7 +6,7 @@ import type {
   InfiniteScrollerResponse,
   Optional,
   Playlist,
-  PlaylistNamesResponse,
+  PlaylistDropdownResponse,
   PlaylistSongsQueryPayload,
   QueueCreatePayload,
   ResourceID,
@@ -42,11 +42,16 @@ export type RequestAPI = {
 
   "playlist::add": (playlistName: string, song: Song) => Result<void, string>;
   "playlist::remove": (playlistName: string, song: Song) => Result<void, string>;
-  "playlist::create": (name: string) => Result<void, string>;
+  "playlist::create": (playlist: Pick<Playlist, "name" | "image">) => Result<void, string>;
   "playlist::delete": (name: string) => Result<void, string>;
-  "playlist::rename": (oldName: string, newName: string) => Result<void, string>;
+  "playlist::toggle": (playlistName: string, song: Song) => Result<void, string>;
+  "playlist::update": (
+    name: string,
+    playlist: Pick<Playlist, "name" | "image">,
+  ) => Result<void, string>;
 
   "dir::select": () => Optional<string>;
+  "dir::openFile": (options: OpenDialogOptions) => Optional<string>;
   "dir::autoGetOsuDir": () => Optional<string>;
   "dir::submit": (dir: string) => void;
 
@@ -84,7 +89,7 @@ export type RequestAPI = {
     request: InfiniteScrollerRequest,
     payload: PlaylistSongsQueryPayload,
   ) => InfiniteScrollerResponse<Song>;
-  "query::playlistNames": () => PlaylistNamesResponse;
+  "query::playlistDropdown": (song: Song) => PlaylistDropdownResponse;
 
   "save::localVolume": (volume: number, song: ResourceID) => void;
 

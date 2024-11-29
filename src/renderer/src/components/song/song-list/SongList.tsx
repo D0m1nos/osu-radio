@@ -5,7 +5,7 @@ import Impulse from "../../../lib/Impulse";
 import { none, some } from "../../../lib/rust-like-utils-client/Optional";
 import InfiniteScroller from "../../InfiniteScroller";
 import AddToPlaylist from "../context-menu/items/AddToPlaylist";
-import SongItem from "../song-item/SongItem";
+import SongItem, { SongItemContextMenuProps } from "../song-item/SongItem";
 import SongListSearch from "../song-list-search/SongListSearch";
 import { songsSearch } from "./song-list.utils";
 import DropdownList from "@renderer/components/dropdown-list/DropdownList";
@@ -93,7 +93,7 @@ const SongList: Component<SongViewProps> = (props) => {
               song={s}
               group={group}
               onSelect={createQueue}
-              contextMenu={<SongListContextMenuContent song={s} />}
+              contextMenu={(options) => <SongListContextMenuContent song={s} {...options} />}
             />
           )}
         />
@@ -102,14 +102,16 @@ const SongList: Component<SongViewProps> = (props) => {
   );
 };
 
-type SongListContextMenuContentProps = { song: Song };
+type SongListContextMenuContentProps = { song: Song } & SongItemContextMenuProps;
 const SongListContextMenuContent: Component<SongListContextMenuContentProps> = (props) => {
   return (
     <DropdownList class="w-40">
       <AddToPlaylist song={props.song} />
       <DropdownList.Item
-        onClick={() => {
+        onClick={(e) => {
+          e.stopImmediatePropagation();
           window.api.request("queue::playNext", props.song.path);
+          props.closeContextMenu();
         }}
       >
         <span>Play next</span>

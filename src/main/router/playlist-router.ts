@@ -8,6 +8,10 @@ import { mainWindow } from "../main";
 
 const BUFFER_SIZE = 50;
 
+function isPlaylistNameTaken(playlistNames: string[], name: string) {
+  return playlistNames.some((n) => n.toLowerCase() === name.toLowerCase());
+}
+
 Router.respond("playlist::add", async (_evt, playlistName, song) => {
   const playlists = Storage.getTable("playlists");
   const playlist = playlists.get(playlistName);
@@ -42,29 +46,32 @@ Router.respond("playlist::add", async (_evt, playlistName, song) => {
   playlists.write(playlistName, playlist.value);
 
   // refresh windows, a song could be added from the queue so we basically refresh everything
+  await Router.dispatch(mainWindow, "playlist::resetDropdown").catch((err) => {
+    console.log(err);
+  });
   await Router.dispatch(mainWindow, "playlist::resetList").catch(errorIgnored);
   await Router.dispatch(mainWindow, "playlist::resetSongList").catch(errorIgnored);
-  await Router.dispatch(mainWindow, "songView::reset").catch(errorIgnored);
 
   return ok({});
 });
 
-Router.respond("playlist::create", (_evt, name) => {
+Router.respond("playlist::create", async (_evt, playlist) => {
   const playlists = Storage.getTable("playlists");
   const playlistNames = Object.keys(playlists.getStruct());
 
-  if (playlistNames.includes(name)) {
+  if (isPlaylistNameTaken(playlistNames, playlist.name)) {
     return fail("Playlist already exists");
   }
 
   // write an empty playlist
-  const empty = { name: name, count: 0, length: 0, songs: [] };
-  playlists.write(name, empty);
+  const empty: Playlist = { ...playlist, count: 0, length: 0, songs: [] };
+  playlists.write(playlist.name, empty);
+  await Router.dispatch(mainWindow, "playlist::resetDropdown").catch(errorIgnored);
 
   return ok({});
 });
 
-Router.respond("playlist::delete", (_evt, name) => {
+Router.respond("playlist::delete", async (_evt, name) => {
   const playlists = Storage.getTable("playlists");
   const playlist = playlists.get(name);
 
@@ -100,6 +107,8 @@ Router.respond("playlist::delete", (_evt, name) => {
 
   // delete the playlist
   playlists.delete(name);
+
+  await Router.dispatch(mainWindow, "playlist::resetDropdown").catch(errorIgnored);
 
   return ok({});
 });
@@ -146,30 +155,29 @@ Router.respond("playlist::remove", async (_evt, playlistName, song) => {
     }
 
     // refresh the songList screen
+    await Router.dispatch(mainWindow, "playlist::resetDropdown").catch(errorIgnored);
+    await Router.dispatch(mainWindow, "playlist::resetList").catch(errorIgnored);
     await Router.dispatch(mainWindow, "playlist::resetSongList").catch(errorIgnored);
+
     return ok({});
   }
   return fail("Song not found in playlist");
 });
 
-Router.respond("playlist::rename", (_evt, oldName, newName) => {
+Router.respond("playlist::update", async (_evt, oldName, playlist) => {
   const playlists = Storage.getTable("playlists");
   const oldPlaylist = playlists.get(oldName);
+  const playlistNames = Object.keys(Storage.getTable("playlists").getStruct());
 
   if (oldPlaylist.isNone) {
     return fail("Playlist does not exist");
   }
 
-  const playlistNames = Object.keys(playlists.getStruct());
-
-  if (playlistNames.includes(newName)) {
-    return fail("Playlist already exists");
+  if (isPlaylistNameTaken(playlistNames, oldName)) {
+    playlists.delete(oldName);
   }
 
-  // replace playlist with new name
-  oldPlaylist.value.name = newName;
-  playlists.write(newName, oldPlaylist.value);
-  playlists.delete(oldName);
+  playlists.write(playlist.name, { ...oldPlaylist.value, ...playlist });
 
   const songs = Storage.getTable("songs");
 
@@ -183,7 +191,7 @@ Router.respond("playlist::rename", (_evt, oldName, newName) => {
     }
 
     if (songNew.value.playlists === undefined) {
-      songNew.value.playlists = [newName];
+      songNew.value.playlists = [playlist.name];
     } else {
       // get the playlist index
       const playlistIndex = songNew.value.playlists.findIndex((p) => p === oldName);
@@ -191,13 +199,17 @@ Router.respond("playlist::rename", (_evt, oldName, newName) => {
       if (playlistIndex > -1) {
         // replace the playlist in the song
         songNew.value.playlists.splice(playlistIndex, 1);
-        songNew.value.playlists.push(newName);
+        songNew.value.playlists.push(playlist.name);
         songs.write(song.audio, songNew.value);
       }
     }
 
     return;
   });
+
+  await Router.dispatch(mainWindow, "playlist::resetDropdown").catch(errorIgnored);
+  await Router.dispatch(mainWindow, "playlist::resetList").catch(errorIgnored);
+  await Router.dispatch(mainWindow, "playlist::resetSongList").catch(errorIgnored);
 
   return ok({});
 });
@@ -212,12 +224,33 @@ Router.respond("query::playlists::init", () => {
   });
 });
 
-Router.respond("query::playlistNames", () => {
+Router.respond("query::playlistDropdown", (_evt, song) => {
+  if (!song) {
+    return none();
+  }
+
   const playlists = Storage.getTable("playlists").getStruct();
-  const names = Object.keys(playlists);
+
+  const tableSong = Storage.getTable("songs").get(song.audio);
+
+  if (tableSong.isNone) {
+    return none();
+  }
+
+  const playlistNameMap = tableSong.value.playlists?.reduce<Record<string, boolean>>(
+    (acc, name) => {
+      acc[name] = true;
+      return acc;
+    },
+    {},
+  );
 
   return some({
-    playlistNames: names,
+    playlists: Object.values(playlists).map(({ name, image }) => ({
+      name,
+      image,
+      isOnSong: Boolean(playlistNameMap?.[name]),
+    })),
   });
 });
 
@@ -235,6 +268,7 @@ Router.respond("query::playlists", (_evt, request) => {
 
     playlistsInfo.push({
       name: name,
+      image: plist.value.image,
       count: plist.value.count,
       length: plist.value.length,
       songs: plist.value.songs,

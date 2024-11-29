@@ -2,16 +2,32 @@ import { addNotice } from "../notice/NoticeContainer";
 import Impulse from "@renderer/lib/Impulse";
 import { BadgeCheckIcon, CircleXIcon } from "lucide-solid";
 import { createSignal } from "solid-js";
-import { Song } from "src/@types";
+import { Playlist, Song } from "src/@types";
 
-const PLAYLIST_SCENE_LIST = 0;
-const PLAYLIST_SCENE_SONGS = 1;
+export type PlaylistPageNew = {
+  name: "new";
+};
 
-const [playlistActiveScene, setPlaylistActiveScene] = createSignal(PLAYLIST_SCENE_LIST);
-const [activePlaylistName, setActivePlaylistName] = createSignal("");
-export { playlistActiveScene, setPlaylistActiveScene };
-export { activePlaylistName, setActivePlaylistName };
-export { PLAYLIST_SCENE_SONGS, PLAYLIST_SCENE_LIST };
+export type PlaylistPageList = {
+  name: "list";
+};
+
+export type PlaylistPageSong = {
+  name: "songs";
+  playlist: Playlist;
+};
+
+export type PlaylistPageEdit = {
+  name: "edit";
+  playlist: Playlist;
+  from: PlaylistPageList | PlaylistPageSong;
+};
+
+export type PlaylistPage = PlaylistPageNew | PlaylistPageList | PlaylistPageSong | PlaylistPageEdit;
+
+export const [playlistActivePage, setPlaylistActivePage] = createSignal<PlaylistPage>({
+  name: "list",
+});
 
 export function noticeError(error: string) {
   addNotice({
@@ -37,28 +53,16 @@ export async function deletePlaylist(name: string, reset: Impulse) {
   }
 }
 
-export async function renamePlaylist(oldName: string, newName: string) {
-  newName = newName.trim();
-  if (newName === undefined || newName === "" || newName === oldName) {
-    return;
-  }
-
-  const result = await window.api.request("playlist::rename", oldName, newName);
+export async function deleteSongFromPlaylist(playlistName: string, song: Song) {
+  const result = await window.api.request("playlist::remove", playlistName, song);
   if (result.isError) {
     noticeError(result.error);
     return;
   }
-
-  addNotice({
-    title: "Renamed playlist",
-    description: "Playlist renamed successfully!",
-    variant: "success",
-    icon: BadgeCheckIcon({ size: 20 }),
-  });
 }
 
-export async function deleteSong(playlistName: string, song: Song) {
-  const result = await window.api.request("playlist::remove", playlistName, song);
+export async function addToPlaylist(name: string, song: Song) {
+  const result = await window.api.request("playlist::add", name, song);
   if (result.isError) {
     noticeError(result.error);
     return;

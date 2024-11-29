@@ -7,8 +7,21 @@ import { song as selectedSong } from "../song.utils";
 import Popover from "@renderer/components/popover/Popover";
 import { EllipsisVerticalIcon } from "lucide-solid";
 import { transparentize } from "polished";
-import { Component, createSignal, JSXElement, onMount, createMemo, Show } from "solid-js";
+import {
+  Component,
+  createSignal,
+  JSXElement,
+  onMount,
+  createMemo,
+  Show,
+  Switch,
+  Match,
+} from "solid-js";
 import { twMerge } from "tailwind-merge";
+
+export type SongItemContextMenuProps = {
+  closeContextMenu: () => void;
+};
 
 type SongItemProps = {
   song: Song;
@@ -17,7 +30,7 @@ type SongItemProps = {
   onSelect: (songResource: ResourceID) => any;
   draggable?: true;
   onDrop?: (before: Element | null) => any;
-  contextMenu?: JSXElement;
+  contextMenu?: JSXElement | ((options: SongItemContextMenuProps) => JSXElement);
 };
 
 const SongItem: Component<SongItemProps> = (props) => {
@@ -74,6 +87,10 @@ const SongItem: Component<SongItemProps> = (props) => {
     return `linear-gradient(to right, ${color} 20%, ${transparentize(0.9)(color)}), rgba(0, 0, 0, 0.2)`;
   });
 
+  const closeContextMenu = () => {
+    setLocalShow(false);
+  };
+
   return (
     <Popover
       isOpen={localShow}
@@ -86,13 +103,17 @@ const SongItem: Component<SongItemProps> = (props) => {
     >
       <Popover.Portal>
         <Popover.Overlay />
-        <Popover.Content
-          onClick={(e) => {
-            e.stopImmediatePropagation();
-            setLocalShow(false);
-          }}
-        >
-          {props.contextMenu}
+        <Popover.Content>
+          <Switch>
+            <Match when={typeof props.contextMenu === "function"}>
+              {(props.contextMenu as (options: SongItemContextMenuProps) => JSXElement)({
+                closeContextMenu,
+              })}
+            </Match>
+            <Match when={typeof props.contextMenu !== "function"}>
+              {props.contextMenu as JSXElement}
+            </Match>
+          </Switch>
         </Popover.Content>
       </Popover.Portal>
 

@@ -3,6 +3,19 @@ import { none, some } from "../lib/rust-like-utils-backend/Optional";
 import { dialog } from "electron";
 import path from "path";
 
+Router.respond("dir::openFile", async (_evt, options) => {
+  const result = await dialog.showOpenDialog({
+    properties: ["openFile"],
+    ...options,
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return none();
+  }
+
+  return some(result.filePaths[0]);
+});
+
 Router.respond("dir::select", () => {
   const path = dialog.showOpenDialogSync({
     title: "Select your osu! folder",

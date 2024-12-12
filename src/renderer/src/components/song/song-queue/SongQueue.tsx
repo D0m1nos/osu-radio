@@ -4,7 +4,7 @@ import Impulse from "../../../lib/Impulse";
 import scrollIfNeeded from "../../../lib/tungsten/scroll-if-needed";
 import InfiniteScroller from "../../InfiniteScroller";
 import AddToPlaylist from "../context-menu/items/AddToPlaylist";
-import SongItem from "../song-item/SongItem";
+import SongItem, { SongItemContextMenuProps } from "../song-item/SongItem";
 import DropdownList from "@renderer/components/dropdown-list/DropdownList";
 import { DeleteIcon } from "lucide-solid";
 import { Component, createSignal, onCleanup, onMount } from "solid-js";
@@ -92,7 +92,7 @@ const SongQueue: Component = () => {
           setCount={setCount}
           reset={resetListing}
           onLoadItems={onSongsLoad}
-          fallback={<div class="py-8 text-center text-subtext">No queue...</div>}
+          fallback={<div class="py-8 text-center uppercase text-subtext">No queue</div>}
           builder={(s) => (
             <SongItem
               song={s}
@@ -100,7 +100,7 @@ const SongQueue: Component = () => {
               selectable={true}
               onSelect={() => window.api.request("queue::play", s.path)}
               onDrop={onDrop(s)}
-              contextMenu={<QueueContextMenuContent song={s} />}
+              contextMenu={(options) => <QueueContextMenuContent song={s} {...options} />}
             />
           )}
         />
@@ -109,11 +109,11 @@ const SongQueue: Component = () => {
   );
 };
 
-type QueueContextMenuContentProps = { song: Song };
+type QueueContextMenuContentProps = { song: Song } & SongItemContextMenuProps;
 const QueueContextMenuContent: Component<QueueContextMenuContentProps> = (props) => {
   return (
     <DropdownList class="w-52">
-      <AddToPlaylist song={props.song} />
+      <AddToPlaylist onCreatePlaylistClick={props.closeContextMenu} song={props.song} />
       <DropdownList.Item
         onClick={() => window.api.request("queue::removeSong", props.song.path)}
         class="text-danger"

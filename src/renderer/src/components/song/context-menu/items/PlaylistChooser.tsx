@@ -1,91 +1,78 @@
+import SongImage from "../../SongImage";
 import DropdownList from "@renderer/components/dropdown-list/DropdownList";
-import { addNotice } from "@renderer/components/notice/NoticeContainer";
+import { getPlaylistImage } from "@renderer/components/playlist/playlist-item/playlist-item.utils";
 import {
-  noticeError,
-  PLAYLIST_SCENE_LIST,
-  setCreatePlaylistBoxSong,
-  setPlaylistActiveScene,
-  setShowPlaylistCreateBox,
+  addToPlaylist,
+  deleteSongFromPlaylist,
+  setPlaylistActivePage,
 } from "@renderer/components/playlist/playlist.utils";
-import { setSidebarActiveTab, SIDEBAR_PAGES } from "@renderer/scenes/main-scene/main.utils";
-import { CheckIcon, CircleCheckIcon, PlusIcon } from "lucide-solid";
-import { Accessor, Component, For, Setter, Show } from "solid-js";
-import { Song } from "src/@types";
+import { setSidebarActiveTab } from "@renderer/scenes/main-scene/main.utils";
+import { SIDEBAR_PAGES } from "@renderer/scenes/main-scene/main.utils";
+import { CheckSquare, PlusIcon, Square } from "lucide-solid";
+import { Component, For, Show } from "solid-js";
+import { PlaylistDropdown, Song } from "src/@types";
 
 type PlaylistChooserProps = {
   song: Song;
-  playlistNames: string[];
-  setShowChooser: Setter<boolean>;
-  timeoutId: Accessor<NodeJS.Timeout | undefined>;
-  setTimeoutId: Setter<NodeJS.Timeout | undefined>;
+  playlists: PlaylistDropdown[];
+  onCreatePlaylistClick?: () => void;
 };
 
 const PlaylistChooser: Component<PlaylistChooserProps> = (props) => {
-  const addToPlaylist = async (name: string) => {
-    const result = await window.api.request("playlist::add", name, props.song);
-    if (result.isError) {
-      noticeError(result.error);
-      return;
-    }
-    addNotice({
-      title: "Song added",
-      description: "Successfully added song to playlist " + name + "!",
-      variant: "success",
-      icon: <CircleCheckIcon size={20} />,
-    });
-  };
-
-  const isInPlaylist = (song: Song, playlistName: string) => {
-    if (song.playlists === undefined) {
-      return false;
-    }
-
-    return song.playlists.includes(playlistName);
-  };
-
   return (
-    <DropdownList
-      onMouseOver={() => {
-        clearTimeout(props.timeoutId());
-      }}
-      onMouseLeave={() => {
-        props.setTimeoutId(
-          setTimeout(() => {
-            props.setShowChooser(false);
-          }, 320),
-        );
-      }}
-      class="max-h-72 w-40 overflow-auto pr-1.5"
-    >
+    <div class="flex max-h-72 flex-col gap-1 overflow-y-auto">
       <DropdownList.Item
         onClick={() => {
-          setCreatePlaylistBoxSong(props.song);
-          setShowPlaylistCreateBox(true);
           setSidebarActiveTab(SIDEBAR_PAGES.PLAYLISTS.value);
-          setPlaylistActiveScene(PLAYLIST_SCENE_LIST);
+          setPlaylistActivePage({ name: "new" });
+          props.onCreatePlaylistClick?.();
         }}
+        class="hover:bg-surface"
       >
         <span>Create Playlist</span>
-        <PlusIcon class="text-subtext" size={20} />
+        <PlusIcon size={16} />
       </DropdownList.Item>
+      <div class="h-[1px] w-full bg-surface" />
+
       <For
         fallback={<DropdownList.Item disabled={true}>No playlists...</DropdownList.Item>}
-        each={props.playlistNames}
+        each={props.playlists}
       >
-        {(child, index) => (
-          <DropdownList.Item
-            onClick={() => {
-              addToPlaylist(props.playlistNames[index()]);
-            }}
-          >
-            <span>{child}</span>
-            <Show when={isInPlaylist(props.song, props.playlistNames[index()])}>
-              <CheckIcon class="text-subtext" size={20} />
-            </Show>
-          </DropdownList.Item>
-        )}
+        {(playlist) => <PlayListChooserItem song={props.song} playlist={playlist} />}
       </For>
-    </DropdownList>
+    </div>
+  );
+};
+
+type PlayListChooserItemProps = {
+  song: Song;
+  playlist: PlaylistDropdown;
+};
+
+const PlayListChooserItem: Component<PlayListChooserItemProps> = (props) => {
+  return (
+    <DropdownList.Item
+      class="gap-3"
+      onClick={() => {
+        if (props.playlist.isOnSong) {
+          deleteSongFromPlaylist(props.playlist.name, props.song);
+        } else {
+          addToPlaylist(props.playlist.name, props.song);
+        }
+      }}
+    >
+      <div class="flex items-center gap-2">
+        <SongImage
+          class="size-7 flex-shrink-0 rounded bg-cover bg-center"
+          src={getPlaylistImage(props.playlist)}
+          instantLoad
+        />
+        <span>{props.playlist.name}</span>
+      </div>
+      <Show when={props.playlist.isOnSong} fallback={<Square class="flex-shrink-0" size={16} />}>
+        <CheckSquare class="flex-shrink-0" size={16} />
+      </Show>
+    </DropdownList.Item>
   );
 };
 

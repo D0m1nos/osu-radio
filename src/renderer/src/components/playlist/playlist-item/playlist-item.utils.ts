@@ -1,12 +1,16 @@
 import { Playlist } from "src/@types";
 
-export function getSongImage(playlist: Playlist) {
-  const songs = playlist.songs;
+export function getPlaylistImage(playlist: Pick<Playlist, "songs" | "image">) {
+  const { songs, image } = playlist;
+  if (image) {
+    return image;
+  }
+
   if (songs.length === 0 || songs[0].bg === undefined || songs[0].bg === "") {
     return "";
-  } else {
-    return songs[0].bg;
   }
+
+  return songs[0].bg;
 }
 
 export function ignoreClickInContextMenu(fn: (evt: MouseEvent) => any): (evt: MouseEvent) => void {

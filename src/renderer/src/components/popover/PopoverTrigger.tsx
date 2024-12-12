@@ -11,7 +11,7 @@ const PopoverTrigger: Component<Props> = (props) => {
       ref={state.setTriggerRef}
       data-open={state.isOpen()}
       onClick={() => {
-        state?.toggle();
+        state?.open();
       }}
       {...props}
     />

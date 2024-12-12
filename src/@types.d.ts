@@ -140,6 +140,11 @@ export type Playlist = {
   count: number;
   length: number; // total length in seconds
   songs: Song[];
+  image?: string;
+};
+
+export type PlaylistDropdown = Pick<Playlist, "name" | "image" | "songs"> & {
+  isOnSong: boolean;
 };
 
 // I guess this is definition of all binary blob files that can be access from the database code?
@@ -262,6 +267,6 @@ export type InfiniteScrollerInitResponse = Optional<{
   count: number;
 }>;
 
-export type PlaylistNamesResponse = Optional<{
-  playlistNames: string[];
+export type PlaylistDropdownResponse = Optional<{
+  playlists: PlaylistDropdown[];
 }>;

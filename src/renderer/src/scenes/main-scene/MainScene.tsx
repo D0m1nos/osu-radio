@@ -21,6 +21,7 @@ import { Accessor, Component, createSignal, Match, Switch } from "solid-js";
 
 const MainScene: Component = () => {
   const { maxSidebarWidth, offsetFromPanel } = useMainResizableOptions();
+
   return (
     <div class="flex h-full min-h-screen flex-col">
       <Switch>
@@ -73,7 +74,7 @@ const MainScene: Component = () => {
         />
       </div>
 
-      <div class="pointer-events-none fixed inset-0 z-[-1] h-full bg-black/80" />
+      <div class="pointer-events-none fixed inset-0 z-[-1] h-full bg-zinc-900/80" />
     </div>
   );
 };

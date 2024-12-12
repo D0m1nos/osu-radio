@@ -246,8 +246,9 @@ Router.respond("query::playlistDropdown", (_evt, song) => {
   );
 
   return some({
-    playlists: Object.values(playlists).map(({ name, image }) => ({
+    playlists: Object.values(playlists).map(({ name, image, songs }) => ({
       name,
+      songs,
       image,
       isOnSong: Boolean(playlistNameMap?.[name]),
     })),

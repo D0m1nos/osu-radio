@@ -17,10 +17,16 @@ export const PlaylistEdit: Component<PlaylistEditProps> = (props) => {
   const [playlistName, setPlaylistName] = createSignal(props.playlist.name ?? "");
 
   const updatePlaylist = async () => {
-    const result = await window.api.request("playlist::update", props.playlist.name, {
+    const updatedPlaylist: Pick<Playlist, "name" | "image"> = {
       name: playlistName(),
       image: playlistImage(),
-    });
+    };
+
+    const result = await window.api.request(
+      "playlist::update",
+      props.playlist.name,
+      updatedPlaylist,
+    );
     if (result.isError) {
       noticeError(result.error);
       return;
@@ -32,7 +38,25 @@ export const PlaylistEdit: Component<PlaylistEditProps> = (props) => {
       variant: "success",
       icon: BadgeCheckIcon({ size: 20 }),
     });
-    setPlaylistActivePage(props.backTo);
+
+    switch (props.backTo.name) {
+      case "songs":
+      case "edit": {
+        setPlaylistActivePage({
+          ...props.backTo,
+          playlist: {
+            ...props.backTo.playlist,
+            ...updatedPlaylist,
+          },
+        });
+        break;
+      }
+
+      default: {
+        setPlaylistActivePage(props.backTo);
+        break;
+      }
+    }
   };
 
   const handleSubmit = (event: SubmitEvent) => {

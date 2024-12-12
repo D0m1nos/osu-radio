@@ -1,5 +1,6 @@
 import SongImage from "../../SongImage";
 import DropdownList from "@renderer/components/dropdown-list/DropdownList";
+import { getPlaylistImage } from "@renderer/components/playlist/playlist-item/playlist-item.utils";
 import {
   addToPlaylist,
   deleteSongFromPlaylist,
@@ -19,7 +20,7 @@ type PlaylistChooserProps = {
 
 const PlaylistChooser: Component<PlaylistChooserProps> = (props) => {
   return (
-    <div class="flex flex-col gap-1">
+    <div class="flex max-h-72 flex-col gap-1 overflow-y-auto">
       <DropdownList.Item
         onClick={() => {
           setSidebarActiveTab(SIDEBAR_PAGES.PLAYLISTS.value);
@@ -62,8 +63,8 @@ const PlayListChooserItem: Component<PlayListChooserItemProps> = (props) => {
     >
       <div class="flex items-center gap-2">
         <SongImage
-          class="size-7 flex-shrink-0 rounded bg-cover"
-          src={props.playlist.image}
+          class="size-7 flex-shrink-0 rounded bg-cover bg-center"
+          src={getPlaylistImage(props.playlist)}
           instantLoad
         />
         <span>{props.playlist.name}</span>

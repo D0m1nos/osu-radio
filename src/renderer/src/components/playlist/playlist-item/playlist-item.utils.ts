@@ -1,6 +1,6 @@
 import { Playlist } from "src/@types";
 
-export function getPlaylistImage(playlist: Playlist) {
+export function getPlaylistImage(playlist: Pick<Playlist, "songs" | "image">) {
   const { songs, image } = playlist;
   if (image) {
     return image;

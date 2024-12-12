@@ -143,7 +143,7 @@ export type Playlist = {
   image?: string;
 };
 
-export type PlaylistDropdown = Pick<Playlist, "name" | "image"> & {
+export type PlaylistDropdown = Pick<Playlist, "name" | "image" | "songs"> & {
   isOnSong: boolean;
 };
 

@@ -173,6 +173,10 @@ Router.respond("playlist::update", async (_evt, oldName, playlist) => {
     return fail("Playlist does not exist");
   }
 
+  if (isPlaylistNameTaken(playlistNames, playlist.name)) {
+    return fail("Playlist already exists");
+  }
+
   if (isPlaylistNameTaken(playlistNames, oldName)) {
     playlists.delete(oldName);
   }

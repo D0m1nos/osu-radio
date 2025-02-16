@@ -1,12 +1,13 @@
 import { namespace } from "@renderer/App";
 import InfiniteScroller from "@renderer/components/InfiniteScroller";
+import Button from "@renderer/components/button/Button";
 import DropdownList from "@renderer/components/dropdown-list/DropdownList";
 import SongItem from "@renderer/components/song/song-item/SongItem";
 import Impulse from "@renderer/lib/Impulse";
 import scrollIfNeeded from "@shared/lib/tungsten/scroll-if-needed";
 import { Song } from "@shared/types/common.types";
 import { RequestAPI } from "@shared/types/router.types";
-import { ListPlusIcon, DeleteIcon } from "lucide-solid";
+import { ListPlusIcon, DeleteIcon, TrashIcon } from "lucide-solid";
 import { Component, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 
 const SongQueue: Component = () => {
@@ -95,10 +96,19 @@ const SongQueue: Component = () => {
       <div class="flex-grow overflow-y-auto px-4">
         <Show when={manualQueue().length > 0}>
           <div class="flex flex-col">
-            <h2 class="text-sm font-bold px-1 pb-2 pt-5">
-              <span>Next in queue</span>
-              <span class="text-subtext"> ({manualQueue().length})</span>
-            </h2>
+            <div class="flex flex-row px-1 pb-2 pt-5 items-center gap-2">
+              <h2 class="text-md font-bold">
+                <span>Next in queue</span>
+                <span class="text-subtext"> ({manualQueue().length})</span>
+              </h2>
+              <Button
+                size={"square"}
+                variant={"outlined"}
+                onClick={() => {
+                  window.api.request("manualQueue::clear");
+                  refreshManualQueue()
+                }} ><TrashIcon class="text-danger opacity-80" size={20} /></Button>
+            </div>
             <div class="flex flex-col gap-y-4">
               <For each={manualQueue()}>
                 {(s) =>
@@ -119,7 +129,7 @@ const SongQueue: Component = () => {
           </div>
         </Show>
         <div class="flex items-center justify-between px-1 pt-5">
-          <h2 class="text-sm font-bold">
+          <h2 class="text-md font-bold">
             <span>Next songs</span>
             <span class="text-subtext"> ({count()})</span>
           </h2>

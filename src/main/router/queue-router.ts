@@ -25,7 +25,6 @@ Router.respond("queue::exists", () => {
 });
 
 let index = 0;
-let manualQueueIndex = 0; // useless ??
 
 let isPlaying: "queue" | "manualQueue" | undefined;
 
@@ -361,15 +360,17 @@ Router.respond("queue::previous", async () => {
 
 Router.respond("queue::next", async () => {
   if (manualQueue.length > 0) {
-    await Router.dispatch(mainWindow, "queue::songChanged", manualQueue[0]).catch(errorIgnored);
-
     if (isPlaying === "manualQueue") {
       manualQueue.shift();
+    } else {
+      isPlaying = "manualQueue";
     }
 
-    isPlaying = "manualQueue";
+    if (manualQueue.length > 0) {
+      await Router.dispatch(mainWindow, "queue::songChanged", manualQueue[0]).catch(errorIgnored);
 
-    return;
+      return;
+    }
   }
 
   if (queue === undefined) {
@@ -447,12 +448,17 @@ Router.respond("manualQueue::removeSong", async (_evt, what) => {
   }
 });
 
-Router.respond("manualQueue::index", () => {
-  if (manualQueue.length === 0) {
-    return;
-  }
+Router.respond("manualQueue::clear", async () => {
+  manualQueue = [];
 
-  return manualQueueIndex;
+  if (isPlaying == "manualQueue") {
+    if (queue !== undefined) {
+      await Router.dispatch(mainWindow, "queue::songChanged", queue[index]).catch(errorIgnored);
+      isPlaying = "queue";
+    } else {
+      isPlaying = undefined;
+    }
+  }
 });
 
 Router.respond("manualQueue::list", () => {

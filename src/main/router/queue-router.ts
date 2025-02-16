@@ -18,12 +18,17 @@ import {
 } from "@shared/types/common.types";
 
 let queue: Song[];
+let manualQueue: Song[] = [];
 
 Router.respond("queue::exists", () => {
-  return queue !== undefined;
+  return queue !== undefined || manualQueue !== undefined;
 });
 
 let index = 0;
+let manualQueueIndex = 0; // useless ??
+
+let isPlaying: "queue" | "manualQueue" | undefined;
+
 let lastPayload: QueueCreatePayload | undefined;
 
 Router.respond("queue::create", async (_evt, payload) => {
@@ -146,6 +151,7 @@ Router.respond("queue::remainingDuration", (): Optional<number> => {
   return some(d.value);
 });
 
+//TODO: add manualQueue
 function duration(startIndex = 0): Result<number, string> {
   if (queue === undefined) {
     return fail("Queue is not defined.");
@@ -255,39 +261,48 @@ Router.respond("queue::play", async (_evt, song) => {
     return;
   }
 
+  // Remove playing song from manual queue
+  if (isPlaying == "manualQueue") {
+    manualQueue.shift();
+  }
+
   index = newIndex;
+
+  isPlaying = "queue";
   await Router.dispatch(mainWindow, "queue::songChanged", queue[index]).catch(errorIgnored);
 });
 
 Router.respond("queue::playNext", async (_evt, song) => {
-  if (queue === undefined) {
+  // if (queue === undefined) {
+  //   return;
+  // }
+
+  // const songIndex = queue.findIndex((s) => s.path === song);
+
+  // if (songIndex === index) {
+  //   return;
+  // }
+
+  // if (songIndex === -1) {
+  const s = Storage.getTable("songs").get(song);
+
+  if (s.isNone) {
     return;
   }
 
-  const songIndex = queue.findIndex((s) => s.path === song);
+  //   queue.splice(index + 1, 0, s.value);
+  // } else {
+  //   // Song is in queue. Move it after currently playing
+  //   const s = queue[songIndex];
+  //   queue.splice(songIndex, 1);
+  //   queue.splice(index + 1, 0, s);
 
-  if (songIndex === index) {
-    return;
-  }
+  //   if (songIndex < index) {
+  //     index--;
+  //   }
+  // }
 
-  if (songIndex === -1) {
-    const s = Storage.getTable("songs").get(song);
-
-    if (s.isNone) {
-      return;
-    }
-
-    queue.splice(index + 1, 0, s.value);
-  } else {
-    // Song is in queue. Move it after currently playing
-    const s = queue[songIndex];
-    queue.splice(songIndex, 1);
-    queue.splice(index + 1, 0, s);
-
-    if (songIndex < index) {
-      index--;
-    }
-  }
+  manualQueue.push(s.value);
 
   await Router.dispatch(mainWindow, "queue::created").catch(errorIgnored);
 });
@@ -312,16 +327,24 @@ Router.respond("queue::removeSong", async (_evt, what) => {
   await Router.dispatch(mainWindow, "queue::created").catch(errorIgnored);
 
   if (whatIndex === index) {
+    if (index === queue.length - 1) {
+      index--;
+    }
+
     await Router.dispatch(mainWindow, "queue::songChanged", queue[index]).catch(errorIgnored);
   }
 });
 
 Router.respond("queue::current", () => {
-  if (queue === undefined || queue[index] === undefined) {
-    return none();
-  }
+  if (isPlaying == "manualQueue") {
+    return some(manualQueue[0]);
+  } else {
+    if (queue === undefined || queue[index] === undefined) {
+      return none();
+    }
 
-  return some(queue[index]);
+    return some(queue[index]);
+  }
 });
 
 Router.respond("queue::previous", async () => {
@@ -337,6 +360,18 @@ Router.respond("queue::previous", async () => {
 });
 
 Router.respond("queue::next", async () => {
+  if (manualQueue.length > 0) {
+    await Router.dispatch(mainWindow, "queue::songChanged", manualQueue[0]).catch(errorIgnored);
+
+    if (isPlaying === "manualQueue") {
+      manualQueue.shift();
+    }
+
+    isPlaying = "manualQueue";
+
+    return;
+  }
+
   if (queue === undefined) {
     return;
   }
@@ -345,7 +380,83 @@ Router.respond("queue::next", async () => {
     index = 0;
   }
 
+  isPlaying = "queue";
+
   await Router.dispatch(mainWindow, "queue::songChanged", queue[index]).catch(errorIgnored);
+});
+
+Router.respond("queue::index", () => {
+  if (queue === undefined) {
+    return;
+  }
+
+  return index;
+});
+
+Router.respond("manualQueue::play", async (_evt, song) => {
+  // Point currently playing index to given song
+  const newIndex = manualQueue.findIndex((s) => s.path === song);
+
+  // console.log(
+  //   "manualQueue queue: ",
+  //   manualQueue.map((e) => e.title),
+  // );
+  // console.log("manualQueue received song path: ", song);
+  // const tmpsong = manualQueue.find((s) => s.path === song);
+  // console.log("manualQueue received song: ", tmpsong?.title);
+  // console.log("manualQueue new index: ", newIndex);
+
+  if (newIndex === -1 || (newIndex === 0 && isPlaying === "manualQueue")) {
+    return;
+  }
+
+  // Remove previous songs in the manual queue
+  manualQueue.splice(0, newIndex);
+
+  // console.log(
+  //   "manualQueue queue after splice: ",
+  //   manualQueue.map((e) => e.title),
+  // );
+
+  isPlaying = "manualQueue";
+
+  await Router.dispatch(mainWindow, "queue::songChanged", manualQueue[0]).catch(errorIgnored);
+});
+
+Router.respond("manualQueue::removeSong", async (_evt, what) => {
+  if (what === undefined) {
+    return;
+  }
+
+  const whatIndex = manualQueue.findIndex((s) => s.path === what);
+
+  if (whatIndex === -1) {
+    return;
+  }
+
+  manualQueue.splice(whatIndex, 1);
+
+  await Router.dispatch(mainWindow, "queue::created").catch(errorIgnored);
+
+  if (whatIndex === 0) {
+    if (manualQueue.length === 0) {
+      await Router.dispatch(mainWindow, "queue::songChanged", queue[index]).catch(errorIgnored);
+    } else {
+      await Router.dispatch(mainWindow, "queue::songChanged", manualQueue[0]).catch(errorIgnored);
+    }
+  }
+});
+
+Router.respond("manualQueue::index", () => {
+  if (manualQueue.length === 0) {
+    return;
+  }
+
+  return manualQueueIndex;
+});
+
+Router.respond("manualQueue::list", () => {
+  return manualQueue;
 });
 
 const BUFFER_SIZE = 50;

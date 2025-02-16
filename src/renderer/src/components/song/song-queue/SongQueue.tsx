@@ -5,10 +5,13 @@ import SongItem from "@renderer/components/song/song-item/SongItem";
 import Impulse from "@renderer/lib/Impulse";
 import scrollIfNeeded from "@shared/lib/tungsten/scroll-if-needed";
 import { Song } from "@shared/types/common.types";
+import { RequestAPI } from "@shared/types/router.types";
 import { ListPlusIcon, DeleteIcon } from "lucide-solid";
-import { Component, createSignal, onCleanup, onMount } from "solid-js";
+import { Component, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 
 const SongQueue: Component = () => {
+  const [manualQueue, setManualQueue] = createSignal<Song[]>([]);
+
   const [count, setCount] = createSignal(0);
   const resetListing = new Impulse();
   const group = namespace.create(true);
@@ -65,26 +68,62 @@ const SongQueue: Component = () => {
     scrollIfNeeded(element, list);
   };
 
-  onMount(() => {
-    window.api.listen("queue::created", resetListing.pulse.bind(resetListing));
+  const refreshManualQueue = async () => {
+    const q = await window.api.request("manualQueue::list");
+    setManualQueue(q);
+  };
+
+  onMount(async () => {
+    window.api.listen("queue::created", () => {
+      resetListing.pulse.bind(resetListing);
+      refreshManualQueue()
+    });
     window.api.listen("queue::songChanged", changeSongHighlight);
+    refreshManualQueue();
   });
 
   onCleanup(() => {
-    window.api.removeListener("queue::created", resetListing.pulse.bind(resetListing));
+    window.api.removeListener("queue::created", () => {
+      resetListing.pulse.bind(resetListing);
+      refreshManualQueue()
+    });
     window.api.removeListener("queue::songChanged", changeSongHighlight);
   });
 
   return (
     <div class="flex w-full flex-col">
-      <div class="flex items-center justify-between px-5 pb-2 pt-5">
-        <h2 class="text-sm font-bold">
-          <span>Next songs on the queue</span>
-          <span class="text-subtext"> ({count()})</span>
-        </h2>
-      </div>
-
       <div class="flex-grow overflow-y-auto px-4">
+        <Show when={manualQueue().length > 0}>
+          <div class="flex flex-col">
+            <h2 class="text-sm font-bold px-1 pb-2 pt-5">
+              <span>Next in queue</span>
+              <span class="text-subtext"> ({manualQueue().length})</span>
+            </h2>
+            <div class="flex flex-col gap-y-4">
+              <For each={manualQueue()}>
+                {(s) =>
+                  <SongItem
+                    song={s}
+                    group={group}
+                    selectable={true}
+                    onSelect={() => {
+                      window.api.request("manualQueue::play", s.path);
+                      refreshManualQueue();
+                    }}
+                    onDrop={onDrop(s)}
+                    contextMenu={<QueueContextMenuContent song={s} event={"manualQueue::removeSong"} />}
+                  />
+                }
+              </For>
+            </div>
+          </div>
+        </Show>
+        <div class="flex items-center justify-between px-1 pt-5">
+          <h2 class="text-sm font-bold">
+            <span>Next songs</span>
+            <span class="text-subtext"> ({count()})</span>
+          </h2>
+        </div>
         <InfiniteScroller
           apiKey={"query::queue"}
           apiInitKey={"query::queue::init"}
@@ -97,9 +136,12 @@ const SongQueue: Component = () => {
               song={s}
               group={group}
               selectable={true}
-              onSelect={() => window.api.request("queue::play", s.path)}
+              onSelect={() => {
+                window.api.request("queue::play", s.path);
+                refreshManualQueue();
+              }}
               onDrop={onDrop(s)}
-              contextMenu={<QueueContextMenuContent song={s} />}
+              contextMenu={<QueueContextMenuContent song={s} event={"queue::removeSong"} />}
             />
           )}
         />
@@ -108,7 +150,7 @@ const SongQueue: Component = () => {
   );
 };
 
-type QueueContextMenuContentProps = { song: Song };
+type QueueContextMenuContentProps = { song: Song, event: keyof RequestAPI };
 const QueueContextMenuContent: Component<QueueContextMenuContentProps> = (props) => {
   return (
     <DropdownList class="w-52">
@@ -117,7 +159,7 @@ const QueueContextMenuContent: Component<QueueContextMenuContentProps> = (props)
         <ListPlusIcon class="text-subtext" size={20} />
       </DropdownList.Item>
       <DropdownList.Item
-        onClick={() => window.api.request("queue::removeSong", props.song.path)}
+        onClick={() => { window.api.request(props.event, props.song.path); }}
         class="text-danger"
       >
         <span>Remove from queue</span>

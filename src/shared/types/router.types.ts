@@ -39,6 +39,12 @@ export type RequestAPI = {
   "queue::removeSong": (song: ResourceID | undefined) => void;
   "queue::create": (payload: QueueCreatePayload) => void;
   "queue::shuffle": () => void;
+  "queue::index": () => number | undefined;
+
+  "manualQueue::play": (song: ResourceID) => void;
+  "manualQueue::removeSong": (song: ResourceID | undefined) => void;
+  "manualQueue::list": () => Song[];
+  "manualQueue::index": () => number | undefined;
 
   "dir::select": () => Optional<string>;
   "dir::autoGetOsuDir": () => Optional<string>;

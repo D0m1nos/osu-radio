@@ -11,6 +11,7 @@ const buttonStyles = cva(["rounded-lg transition-colors duration-200 ease font-m
       link: "bg-transparent text-text hover:underline text-decoration-2 underline-offset-2",
     },
     size: {
+      small: "px-2 py-1",
       medium: "px-4 py-2",
       large: "px-7 py-2.5",
       icon: "grid place-items-center aspect-square size-9 p-1 -m-2",

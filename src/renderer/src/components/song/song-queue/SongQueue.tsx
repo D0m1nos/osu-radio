@@ -7,7 +7,7 @@ import Impulse from "@renderer/lib/Impulse";
 import scrollIfNeeded from "@shared/lib/tungsten/scroll-if-needed";
 import { Song } from "@shared/types/common.types";
 import { RequestAPI } from "@shared/types/router.types";
-import { ListPlusIcon, DeleteIcon, TrashIcon } from "lucide-solid";
+import { ListPlusIcon, DeleteIcon } from "lucide-solid";
 import { Component, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 
 const SongQueue: Component = () => {
@@ -77,6 +77,7 @@ const SongQueue: Component = () => {
   onMount(async () => {
     window.api.listen("queue::created", () => {
       resetListing.pulse.bind(resetListing);
+      resetListing.pulse(); // to refresh the queue when removing a song through the context menu
       refreshManualQueue()
     });
     window.api.listen("queue::songChanged", changeSongHighlight);
@@ -86,6 +87,7 @@ const SongQueue: Component = () => {
   onCleanup(() => {
     window.api.removeListener("queue::created", () => {
       resetListing.pulse.bind(resetListing);
+      resetListing.pulse();
       refreshManualQueue()
     });
     window.api.removeListener("queue::songChanged", changeSongHighlight);
@@ -102,12 +104,15 @@ const SongQueue: Component = () => {
                 <span class="text-subtext"> ({manualQueue().length})</span>
               </h2>
               <Button
-                size={"square"}
+                size={"small"}
                 variant={"outlined"}
                 onClick={() => {
                   window.api.request("manualQueue::clear");
                   refreshManualQueue()
-                }} ><TrashIcon class="text-danger opacity-80" size={20} /></Button>
+                }}
+              >
+                <span class="text-danger font-bold opacity-80">Clear</span>
+              </Button>
             </div>
             <div class="flex flex-col gap-y-4">
               <For each={manualQueue()}>

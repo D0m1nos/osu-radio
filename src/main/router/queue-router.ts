@@ -260,8 +260,6 @@ Router.respond("queue::play", async (_evt, song) => {
   // Point currently playing index to given song
   const newIndex = queue.findIndex((s) => s.path === song);
 
-  console.log("queue (before): ", isPlaying);
-
   if (newIndex === -1 || (newIndex === index && isPlaying === "queue")) {
     return;
   }
@@ -274,8 +272,6 @@ Router.respond("queue::play", async (_evt, song) => {
   index = newIndex;
 
   isPlaying = "queue";
-
-  console.log("queue (after): ", isPlaying);
 
   await Router.dispatch(mainWindow, "queue::songChanged", queue[index]).catch(errorIgnored);
 });
@@ -351,6 +347,7 @@ Router.respond("queue::next", async () => {
     }
 
     if (manualQueue.length > 0) {
+      await Router.dispatch(mainWindow, "queue::created").catch(errorIgnored);
       await Router.dispatch(mainWindow, "queue::songChanged", manualQueue[0]).catch(errorIgnored);
 
       return;
@@ -374,21 +371,13 @@ Router.respond("queue::next", async () => {
   await Router.dispatch(mainWindow, "queue::songChanged", queue[index]).catch(errorIgnored);
 });
 
-Router.respond("manualQueue::play", async (_evt, song) => {
-  // Point currently playing index to given song
-  const newIndex = manualQueue.findIndex((s) => s.path === song);
-
-  console.log(manualQueue.map((e) => e.title));
-  console.log(manualQueue.find((s) => s.path === song)?.title);
-  console.log(newIndex, isPlaying);
-
-  if (newIndex === -1 || (newIndex === 0 && isPlaying === "manualQueue")) {
+Router.respond("manualQueue::play", async (_evt, index) => {
+  if (index === 0 && isPlaying === "manualQueue") {
     return;
   }
 
   // Remove previous songs in the manual queue
-  // BUG: if a song is present multiple times in a row nothing happens no matter which one gets clicked
-  manualQueue.splice(0, newIndex);
+  manualQueue.splice(0, index);
 
   isPlaying = "manualQueue";
 

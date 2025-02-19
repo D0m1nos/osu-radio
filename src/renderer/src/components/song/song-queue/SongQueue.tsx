@@ -116,13 +116,13 @@ const SongQueue: Component = () => {
             </div>
             <div class="flex flex-col gap-y-4">
               <For each={manualQueue()}>
-                {(s) =>
+                {(s, idx) =>
                   <SongItem
                     song={s}
                     group={group}
                     selectable={true}
                     onSelect={() => {
-                      window.api.request("manualQueue::play", s.path);
+                      window.api.request("manualQueue::play", idx());
                       refreshManualQueue();
                     }}
                     onDrop={onDrop(s)}

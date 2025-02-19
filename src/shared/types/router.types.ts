@@ -39,7 +39,7 @@ export type RequestAPI = {
   "queue::create": (payload: QueueCreatePayload) => void;
   "queue::shuffle": () => void;
 
-  "manualQueue::play": (song: ResourceID) => void;
+  "manualQueue::play": (index: number) => void;
   "manualQueue::add": (song: ResourceID) => void;
   "manualQueue::removeSong": (song: ResourceID | undefined) => void;
   "manualQueue::clear": () => void;

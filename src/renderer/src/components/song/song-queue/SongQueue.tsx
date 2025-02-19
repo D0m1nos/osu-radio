@@ -4,7 +4,6 @@ import Button from "@renderer/components/button/Button";
 import DropdownList from "@renderer/components/dropdown-list/DropdownList";
 import SongItem from "@renderer/components/song/song-item/SongItem";
 import Impulse from "@renderer/lib/Impulse";
-import scrollIfNeeded from "@shared/lib/tungsten/scroll-if-needed";
 import { Song } from "@shared/types/common.types";
 import { RequestAPI } from "@shared/types/router.types";
 import { ListPlusIcon, DeleteIcon } from "lucide-solid";
@@ -29,7 +28,6 @@ const SongQueue: Component = () => {
       return;
     }
 
-    changeSongHighlight(song.value);
   };
 
   const onDrop = (s: Song) => {
@@ -40,33 +38,6 @@ const SongQueue: Component = () => {
         (before as HTMLElement | null)?.dataset.path,
       );
     };
-  };
-
-  const changeSongHighlight = (song: Song): void => {
-    if (view === undefined) {
-      return;
-    }
-
-    const selected = view.querySelector<HTMLElement>(".song-item.selected");
-    if (selected !== null && selected.dataset.path !== song.path) {
-      selected.classList.remove("selected");
-    }
-
-    const path = song.path.replaceAll('"', '\\"').replaceAll("\\", "\\\\");
-    const element = view.querySelector<HTMLElement>(`.song-item[data-path="${path}"]`);
-    element?.classList.add("selected");
-
-    if (element === null) {
-      return;
-    }
-
-    const list = element.closest<HTMLElement>(".list");
-
-    if (list === null) {
-      return;
-    }
-
-    scrollIfNeeded(element, list);
   };
 
   const refreshManualQueue = async () => {
@@ -80,7 +51,6 @@ const SongQueue: Component = () => {
       resetListing.pulse(); // to refresh the queue when removing a song through the context menu
       refreshManualQueue()
     });
-    window.api.listen("queue::songChanged", changeSongHighlight);
     refreshManualQueue();
   });
 
@@ -90,7 +60,6 @@ const SongQueue: Component = () => {
       resetListing.pulse();
       refreshManualQueue()
     });
-    window.api.removeListener("queue::songChanged", changeSongHighlight);
   });
 
   return (

@@ -31,6 +31,8 @@ let isPlaying: "queue" | "manualQueue" | undefined;
 let lastPayload: QueueCreatePayload | undefined;
 
 Router.respond("queue::create", async (_evt, payload) => {
+  isPlaying = "queue";
+
   if (comparePayload(payload, lastPayload)) {
     // Payload is practically same. Find start song and play queue from there
     const newIndex = queue.findIndex((s) => s.path === payload.startSong);
@@ -258,6 +260,8 @@ Router.respond("queue::play", async (_evt, song) => {
   // Point currently playing index to given song
   const newIndex = queue.findIndex((s) => s.path === song);
 
+  console.log("queue (before): ", isPlaying);
+
   if (newIndex === -1 || (newIndex === index && isPlaying === "queue")) {
     return;
   }
@@ -271,19 +275,9 @@ Router.respond("queue::play", async (_evt, song) => {
 
   isPlaying = "queue";
 
+  console.log("queue (after): ", isPlaying);
+
   await Router.dispatch(mainWindow, "queue::songChanged", queue[index]).catch(errorIgnored);
-});
-
-Router.respond("queue::playNext", async (_evt, song) => {
-  const s = Storage.getTable("songs").get(song);
-
-  if (s.isNone) {
-    return;
-  }
-
-  manualQueue.push(s.value);
-
-  await Router.dispatch(mainWindow, "queue::created").catch(errorIgnored);
 });
 
 Router.respond("queue::removeSong", async (_evt, what) => {
@@ -384,6 +378,10 @@ Router.respond("manualQueue::play", async (_evt, song) => {
   // Point currently playing index to given song
   const newIndex = manualQueue.findIndex((s) => s.path === song);
 
+  console.log(manualQueue.map((e) => e.title));
+  console.log(manualQueue.find((s) => s.path === song)?.title);
+  console.log(newIndex, isPlaying);
+
   if (newIndex === -1 || (newIndex === 0 && isPlaying === "manualQueue")) {
     return;
   }
@@ -395,6 +393,18 @@ Router.respond("manualQueue::play", async (_evt, song) => {
   isPlaying = "manualQueue";
 
   await Router.dispatch(mainWindow, "queue::songChanged", manualQueue[0]).catch(errorIgnored);
+});
+
+Router.respond("manualQueue::add", async (_evt, song) => {
+  const s = Storage.getTable("songs").get(song);
+
+  if (s.isNone) {
+    return;
+  }
+
+  manualQueue.push(s.value);
+
+  await Router.dispatch(mainWindow, "queue::created").catch(errorIgnored);
 });
 
 Router.respond("manualQueue::removeSong", async (_evt, what) => {

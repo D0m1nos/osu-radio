@@ -15,20 +15,6 @@ const SongQueue: Component = () => {
   const [count, setCount] = createSignal(0);
   const resetListing = new Impulse();
   const group = namespace.create(true);
-  let view: HTMLDivElement | undefined;
-
-  const onSongsLoad = async () => {
-    if (!view) {
-      return;
-    }
-
-    const song = await window.api.request("queue::current");
-
-    if (song.isNone) {
-      return;
-    }
-
-  };
 
   const onDrop = (s: Song) => {
     return async (before: Element | null) => {
@@ -49,7 +35,7 @@ const SongQueue: Component = () => {
     window.api.listen("queue::created", () => {
       resetListing.pulse.bind(resetListing);
       resetListing.pulse(); // to refresh the queue when removing a song through the context menu
-      refreshManualQueue()
+      refreshManualQueue();
     });
     refreshManualQueue();
   });
@@ -58,7 +44,7 @@ const SongQueue: Component = () => {
     window.api.removeListener("queue::created", () => {
       resetListing.pulse.bind(resetListing);
       resetListing.pulse();
-      refreshManualQueue()
+      refreshManualQueue();
     });
   });
 
@@ -67,7 +53,7 @@ const SongQueue: Component = () => {
       <div class="flex-grow overflow-y-auto px-4">
         <Show when={manualQueue().length > 0}>
           <div class="flex flex-col">
-            <div class="flex flex-row px-1 pb-2 pt-5 items-center gap-2">
+            <div class="flex flex-row items-center gap-2 px-1 pb-2 pt-5">
               <h2 class="text-md font-bold">
                 <span>Next in queue</span>
                 <span class="text-subtext"> ({manualQueue().length})</span>
@@ -77,15 +63,15 @@ const SongQueue: Component = () => {
                 variant={"outlined"}
                 onClick={() => {
                   window.api.request("manualQueue::clear");
-                  refreshManualQueue()
+                  refreshManualQueue();
                 }}
               >
-                <span class="text-danger font-bold opacity-80">Clear</span>
+                <span class="font-bold text-danger opacity-80">Clear</span>
               </Button>
             </div>
             <div class="flex flex-col gap-y-4">
               <For each={manualQueue()}>
-                {(s, idx) =>
+                {(s, idx) => (
                   <SongItem
                     song={s}
                     group={group}
@@ -95,9 +81,11 @@ const SongQueue: Component = () => {
                       refreshManualQueue();
                     }}
                     onDrop={onDrop(s)}
-                    contextMenu={<QueueContextMenuContent song={s} event={"manualQueue::removeSong"} />}
+                    contextMenu={
+                      <QueueContextMenuContent song={s} event={"manualQueue::removeSong"} />
+                    }
                   />
-                }
+                )}
               </For>
             </div>
           </div>
@@ -113,7 +101,6 @@ const SongQueue: Component = () => {
           apiInitKey={"query::queue::init"}
           setCount={setCount}
           reset={resetListing}
-          onLoadItems={onSongsLoad}
           fallback={<div class="py-8 text-center text-subtext">No queue...</div>}
           builder={(s) => (
             <SongItem
@@ -134,7 +121,7 @@ const SongQueue: Component = () => {
   );
 };
 
-type QueueContextMenuContentProps = { song: Song, event: keyof RequestAPI };
+type QueueContextMenuContentProps = { song: Song; event: keyof RequestAPI };
 const QueueContextMenuContent: Component<QueueContextMenuContentProps> = (props) => {
   return (
     <DropdownList class="w-52">
@@ -143,7 +130,9 @@ const QueueContextMenuContent: Component<QueueContextMenuContentProps> = (props)
         <ListPlusIcon class="text-subtext" size={20} />
       </DropdownList.Item>
       <DropdownList.Item
-        onClick={() => { window.api.request(props.event, props.song.path); }}
+        onClick={() => {
+          window.api.request(props.event, props.song.path);
+        }}
         class="text-danger"
       >
         <span>Remove from queue</span>
